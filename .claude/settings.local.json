@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init -y -b neutral --force)",
+      "Bash(npx shadcn@latest init -y --force)",
+      "Bash(npx shadcn@latest init --help)",
+      "Bash(npx shadcn@latest init -t vite -b radix -y --force --css-variables --pointer)",
+      "Bash(npx shadcn@latest init -t vite -b radix -y --force --css-variables --pointer -p nova)",
+      "Bash(npx shadcn@latest add card badge progress avatar)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(kill %1)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(powershell -Command \"Stop-Process -Id 21768 -Force\")",
+      "Bash(npx shadcn@latest add textarea)",
+      "Bash(git config *)",
+      "Bash(gh auth *)",
+      "PowerShell(git config --global credential.helper; \"---\"; \\(Get-Command gh -ErrorAction SilentlyContinue\\).Source; \"---\"; \\(Get-Command git\\).Source)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
