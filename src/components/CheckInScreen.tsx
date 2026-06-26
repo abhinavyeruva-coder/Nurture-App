@@ -54,7 +54,7 @@ const NO_COPY: BranchCopy = {
   q2Placeholder: "No judgment here. Just be honest...",
   q3Title: "What would make tomorrow different?",
   q3Placeholder: "One small thing. Doesn't have to be big...",
-  confirmTitle: "Reflection counts too.",
+  confirmTitle: "Honesty is its own kind of growth.",
   confirmSub: "Try again tomorrow.",
 }
 

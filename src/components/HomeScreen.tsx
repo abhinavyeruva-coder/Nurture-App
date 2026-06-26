@@ -1,4 +1,4 @@
-import { Flame, Leaf, Sprout, AlertTriangle, ChevronRight } from "lucide-react"
+import { Flame, Leaf, Droplet, Sprout, AlertTriangle, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ export interface HomeScreenProps {
   goalName: string
   streak: number
   longestStreak: number
+  reflections: number
   vitality: number
   stage: GrowthStage
   isWilting: boolean
@@ -19,12 +20,21 @@ export interface HomeScreenProps {
   onViewLog: () => void
 }
 
-const STAGE_LABEL: Record<GrowthStage, string> = {
-  seed: "Seed",
-  sprout: "Sprout",
-  sapling: "Sapling",
-  budding: "Budding",
-  flourishing: "Flourishing",
+/** Each stage's display name + the streak day the next stage begins. */
+const STAGE_META: Record<GrowthStage, { label: string; next?: { label: string; at: number } }> = {
+  seed: { label: "Seed", next: { label: "Sprout", at: 4 } },
+  sprout: { label: "Sprout", next: { label: "Sapling", at: 8 } },
+  sapling: { label: "Sapling", next: { label: "Budding", at: 15 } },
+  budding: { label: "Budding", next: { label: "Flowering", at: 31 } },
+  flowering: { label: "Flowering" },
+}
+
+/** e.g. "Sapling — 6 days until Budding"; just "Flowering" at the final stage. */
+function stageLabel(stage: GrowthStage, streak: number): string {
+  const meta = STAGE_META[stage]
+  if (!meta.next) return meta.label
+  const days = Math.max(1, meta.next.at - streak)
+  return `${meta.label} — ${days} day${days === 1 ? "" : "s"} until ${meta.next.label}`
 }
 
 export function HomeScreen({
@@ -32,6 +42,7 @@ export function HomeScreen({
   goalName,
   streak,
   longestStreak,
+  reflections,
   vitality,
   stage,
   isWilting,
@@ -81,14 +92,19 @@ export function HomeScreen({
               </Badge>
               <Badge
                 variant="outline"
-                className="rounded-full border-none bg-transparent px-0 text-[0.7rem] font-medium text-muted-foreground"
+                className="whitespace-nowrap rounded-full border-none bg-transparent px-0 text-[0.7rem] font-medium text-muted-foreground"
               >
-                {STAGE_LABEL[stage]}
+                {stageLabel(stage, streak)}
               </Badge>
             </div>
 
             <div className="h-56 w-56">
-              <GrowthVisual stage={stage} wilting={isWilting} className="h-full w-full" />
+              <GrowthVisual
+                stage={stage}
+                reflections={reflections}
+                wilting={isWilting}
+                className="h-full w-full"
+              />
             </div>
 
             <div className="mb-1 flex w-full items-center gap-3">
@@ -101,27 +117,38 @@ export function HomeScreen({
           </CardContent>
         </Card>
 
-        {/* streak stats */}
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        {/* streak + reflection stats */}
+        <div className="mt-4 grid grid-cols-3 gap-3">
           <Card className="border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
-            <CardContent className="flex flex-col gap-1 px-4 py-1">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Flame className="h-4 w-4 text-[var(--accent)]" />
-                <span className="text-xs font-medium">Current streak</span>
+            <CardContent className="flex flex-col gap-1 px-3 py-1">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Flame className="h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <span className="text-[0.7rem] font-medium">Streak</span>
               </div>
               <p className="font-heading text-2xl font-medium text-foreground">
-                {streak} <span className="text-sm font-sans font-normal text-muted-foreground">day{streak === 1 ? "" : "s"}</span>
+                {streak} <span className="text-xs font-sans font-normal text-muted-foreground">day{streak === 1 ? "" : "s"}</span>
               </p>
             </CardContent>
           </Card>
           <Card className="border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
-            <CardContent className="flex flex-col gap-1 px-4 py-1">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Leaf className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium">Longest streak</span>
+            <CardContent className="flex flex-col gap-1 px-3 py-1">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Droplet className="h-4 w-4 shrink-0 text-[var(--sprout)]" />
+                <span className="text-[0.7rem] font-medium">Reflections</span>
               </div>
               <p className="font-heading text-2xl font-medium text-foreground">
-                {longestStreak} <span className="text-sm font-sans font-normal text-muted-foreground">days</span>
+                {reflections}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
+            <CardContent className="flex flex-col gap-1 px-3 py-1">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Leaf className="h-4 w-4 shrink-0 text-primary" />
+                <span className="text-[0.7rem] font-medium">Longest</span>
+              </div>
+              <p className="font-heading text-2xl font-medium text-foreground">
+                {longestStreak} <span className="text-xs font-sans font-normal text-muted-foreground">days</span>
               </p>
             </CardContent>
           </Card>

@@ -13,7 +13,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
           <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[var(--sprout)]/10 blur-3xl" />
           <div className="absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
         </div>
-        <div className="relative">{children}</div>
+        <div className="relative pt-[max(env(safe-area-inset-top),24px)]">{children}</div>
       </div>
     </div>
   )

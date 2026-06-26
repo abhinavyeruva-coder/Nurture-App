@@ -8,11 +8,11 @@ import type { GrowthStage } from "@/components/GrowthVisual"
 import { MOCK_CHECKINS, TODAY, toDateKey, type CheckInRecord } from "@/lib/checkins"
 
 function stageFromStreak(streak: number): GrowthStage {
-  if (streak <= 0) return "seed"
-  if (streak <= 2) return "sprout"
-  if (streak <= 6) return "sapling"
-  if (streak <= 13) return "budding"
-  return "flourishing"
+  if (streak <= 3) return "seed" // days 1–3
+  if (streak <= 7) return "sprout" // days 4–7
+  if (streak <= 14) return "sapling" // days 8–14
+  if (streak <= 30) return "budding" // days 15–30
+  return "flowering" // day 31+
 }
 
 type Screen = "home" | "checkin" | "log"
@@ -23,6 +23,8 @@ function App() {
   const [streak, setStreak] = useState(9)
   const [longestStreak, setLongestStreak] = useState(21)
   const [vitality, setVitality] = useState(78)
+  // Sample state: a 9-day streak with 6 reflections, so the growth + roots read clearly.
+  const [reflections, setReflections] = useState(6)
   const [checkInLog, setCheckInLog] = useState<CheckInRecord[]>(MOCK_CHECKINS)
   const inGracePeriod = false
   const isWilting = false
@@ -37,6 +39,10 @@ function App() {
       setStreak(nextStreak)
       setLongestStreak((longest) => Math.max(longest, nextStreak))
       setVitality((v) => Math.min(100, v + 8))
+    }
+    // Any real reflection — Yes or No — counts toward the plant's vitality.
+    if (answers.howItWent.trim() || answers.reason.trim()) {
+      setReflections((r) => r + 1)
     }
     setCheckedInToday(true)
     const todayKey = toDateKey(TODAY)
@@ -62,6 +68,7 @@ function App() {
               goalName={goalName}
               streak={streak}
               longestStreak={longestStreak}
+              reflections={reflections}
               vitality={vitality}
               stage={stageFromStreak(streak)}
               isWilting={isWilting}
