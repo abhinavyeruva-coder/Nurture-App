@@ -88,3 +88,27 @@ Healthiest plant = long streak + many reflections. A streak-only user has a tall
 - Communication style: direct, casual, peer-to-peer
 - Founder is design-conscious and pushes back on bad logic — engage with reasoning, not just compliance
 - Build philosophy: ship the visible layer first, test with real users, then layer in invisible/AI features
+
+## Code map (where things live)
+
+- `src/App.tsx` — top-level state + screen router (`home` / `checkin` / `log`). Holds `streak`, `longestStreak`, `reflections`, `vitality`, and the check-in log. `stageFromStreak()` maps streak → growth stage. Sample state defaults: 9-day streak, 6 reflections.
+- `src/components/AppFrame.tsx` — the single mobile shell (≤420px, centered, ambient blobs). Does NOT handle safe-area padding (see gotcha below).
+- `src/components/HomeScreen.tsx` — header, plant card (stage label + "X days until next stage"), vitality bar, 3 stat cards (Streak / Reflections / Longest), log link, check-in CTA.
+- `src/components/CheckInScreen.tsx` — the Yes/No branching check-in. `YES_COPY` / `NO_COPY` objects hold all per-branch question + confirmation copy.
+- `src/components/GrowthLogScreen.tsx` — monthly calendar + day-detail view.
+- `src/components/GrowthVisual.tsx` — the SVG plant. Props: `stage` (size), `reflections` (leaf richness + root depth), `animateRoots` (draws roots growing on the No confirmation), `wilting`. Root color/paths/widths are shared constants so Home and confirmation match exactly.
+- `src/lib/checkins.ts` — `CheckInRecord` type, date helpers, and `MOCK_CHECKINS` (a full sample June 2026 month). `TODAY` is pinned to 2026-06-25 for the demo.
+
+## Implementation notes & gotchas (read before touching layout)
+
+- **Safe-area padding lives at SCREEN level, never as a stacked wrapper.** Each screen root uses `pt-[max(env(safe-area-inset-top),28px)]` ON its own `min-h-screen` box (border-box, so the inset is absorbed inside the 100vh). Do NOT add a separate padded wrapper around a `min-h-screen` element — that stacks `inset + 100vh > 100vh`, which caused a desktop scrollbar and knocked the frame off-center. This bug was diagnosed and fixed; don't reintroduce it.
+- `index.html` viewport meta must keep `viewport-fit=cover` or iOS reports `env(safe-area-inset-top)` as 0.
+- The 5th growth stage is named `flowering` in code (not "flourishing").
+- Reflections counter increments on ANY check-in with written text (Yes or No); only Yes increments the streak.
+- State is in-memory only — resets on refresh (cloud storage is a Phase 3 item).
+- Plant transitions use `motion/react`; roots "grow" via SVG `pathLength` animation (~2s ease-out, no bounce).
+
+## Build / deploy
+
+- `npm run build` runs `tsc -b && vite build` — a TS error fails the Vercel build. Type-check locally before pushing.
+- Pushing to `main` auto-deploys via Vercel. `.claude/settings.local.json` is local-only — keep it out of commits.
