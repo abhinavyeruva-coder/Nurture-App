@@ -11,7 +11,6 @@ export interface HomeScreenProps {
   streak: number
   longestStreak: number
   reflections: number
-  vitality: number
   stage: GrowthStage
   isWilting: boolean
   inGracePeriod: boolean
@@ -20,13 +19,13 @@ export interface HomeScreenProps {
   onViewLog: () => void
 }
 
-/** Each stage's display name + the streak day the next stage begins. */
-const STAGE_META: Record<GrowthStage, { label: string; next?: { label: string; at: number } }> = {
-  seed: { label: "Seed", next: { label: "Sprout", at: 4 } },
-  sprout: { label: "Sprout", next: { label: "Sapling", at: 8 } },
-  sapling: { label: "Sapling", next: { label: "Budding", at: 15 } },
-  budding: { label: "Budding", next: { label: "Flowering", at: 31 } },
-  flowering: { label: "Flowering" },
+/** Each stage's display name, the streak day it begins, and where the next starts. */
+const STAGE_META: Record<GrowthStage, { label: string; start: number; next?: { label: string; at: number } }> = {
+  seed: { label: "Seed", start: 1, next: { label: "Sprout", at: 4 } },
+  sprout: { label: "Sprout", start: 4, next: { label: "Sapling", at: 8 } },
+  sapling: { label: "Sapling", start: 8, next: { label: "Budding", at: 15 } },
+  budding: { label: "Budding", start: 15, next: { label: "Flowering", at: 31 } },
+  flowering: { label: "Flowering", start: 31 },
 }
 
 /** e.g. "Sapling — 6 days until Budding"; just "Flowering" at the final stage. */
@@ -37,13 +36,20 @@ function stageLabel(stage: GrowthStage, streak: number): string {
   return `${meta.label} — ${days} day${days === 1 ? "" : "s"} until ${meta.next.label}`
 }
 
+/** Progress (0–100) through the current stage toward the next, by streak. */
+function stageProgress(stage: GrowthStage, streak: number): number {
+  const meta = STAGE_META[stage]
+  if (!meta.next) return 100
+  const pct = ((streak - meta.start) / (meta.next.at - meta.start)) * 100
+  return Math.round(Math.min(100, Math.max(0, pct)))
+}
+
 export function HomeScreen({
   userName = "Avery",
   goalName,
   streak,
   longestStreak,
   reflections,
-  vitality,
   stage,
   isWilting,
   inGracePeriod,
@@ -51,6 +57,11 @@ export function HomeScreen({
   onCheckIn,
   onViewLog,
 }: HomeScreenProps) {
+  // Brand-new users (streak 0) get a welcoming "Day 1" label + empty bar;
+  // once they've checked in once, the normal stage logic takes over.
+  const isNewUser = streak === 0
+  const cardLabel = isNewUser ? "Seed — Day 1 of your journey" : stageLabel(stage, streak)
+  const progress = isNewUser ? 0 : stageProgress(stage, streak)
   return (
     <div className="flex min-h-screen w-full flex-col px-5 pb-10 pt-[max(env(safe-area-inset-top),28px)]">
         {/* header */}
@@ -86,15 +97,15 @@ export function HomeScreen({
         {/* growth card */}
         <Card className="mt-6 overflow-hidden border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
           <CardContent className="flex flex-col items-center px-6 pb-2 pt-4">
-            <div className="flex w-full items-center justify-between">
-              <Badge variant="secondary" className="rounded-full px-3 py-1 text-[0.7rem] font-medium tracking-wide text-secondary-foreground">
-                {goalName}
+            <div className="flex w-full items-center justify-between gap-2">
+              <Badge variant="secondary" className="min-w-0 max-w-[55%] shrink justify-start rounded-full px-3 py-1 text-[0.7rem] font-medium tracking-wide text-secondary-foreground">
+                <span className="truncate">{goalName}</span>
               </Badge>
               <Badge
                 variant="outline"
-                className="whitespace-nowrap rounded-full border-none bg-transparent px-0 text-[0.7rem] font-medium text-muted-foreground"
+                className="shrink-0 whitespace-nowrap rounded-full border-none bg-transparent px-0 text-[0.7rem] font-medium text-muted-foreground"
               >
-                {stageLabel(stage, streak)}
+                {cardLabel}
               </Badge>
             </div>
 
@@ -109,9 +120,9 @@ export function HomeScreen({
 
             <div className="mb-1 flex w-full items-center gap-3">
               <Sprout className="h-4 w-4 shrink-0 text-[var(--sprout)]" />
-              <Progress value={vitality} className="h-1.5" />
+              <Progress value={progress} className="h-1.5" />
               <span className="w-9 shrink-0 text-right text-xs font-medium text-muted-foreground">
-                {vitality}%
+                {progress}%
               </span>
             </div>
           </CardContent>

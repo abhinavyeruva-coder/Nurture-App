@@ -4,8 +4,10 @@ import { AppFrame } from "@/components/AppFrame"
 import { HomeScreen } from "@/components/HomeScreen"
 import { CheckInScreen, type CheckInAnswers } from "@/components/CheckInScreen"
 import { GrowthLogScreen } from "@/components/GrowthLogScreen"
+import { OnboardingFlow } from "@/components/OnboardingFlow"
 import type { GrowthStage } from "@/components/GrowthVisual"
-import { MOCK_CHECKINS, TODAY, toDateKey, type CheckInRecord } from "@/lib/checkins"
+import { TODAY, toDateKey, type CheckInRecord } from "@/lib/checkins"
+import { loadProfile, saveProfile, type UserProfile } from "@/lib/profile"
 
 function stageFromStreak(streak: number): GrowthStage {
   if (streak <= 3) return "seed" // days 1–3
@@ -18,61 +20,66 @@ function stageFromStreak(streak: number): GrowthStage {
 type Screen = "home" | "checkin" | "log"
 
 function App() {
+  // Single source of truth — loaded from localStorage on first render.
+  const [profile, setProfile] = useState<UserProfile | null>(() => loadProfile())
   const [screen, setScreen] = useState<Screen>("home")
-  const [checkedInToday, setCheckedInToday] = useState(false)
-  const [streak, setStreak] = useState(9)
-  const [longestStreak, setLongestStreak] = useState(21)
-  const [vitality, setVitality] = useState(78)
-  // Sample state: a 9-day streak with 6 reflections, so the growth + roots read clearly.
-  const [reflections, setReflections] = useState(6)
-  const [checkInLog, setCheckInLog] = useState<CheckInRecord[]>(MOCK_CHECKINS)
-  const inGracePeriod = false
-  const isWilting = false
 
-  const goalName = "Read 20 minutes"
+  // No saved profile → first run: send the user through onboarding.
+  if (!profile) {
+    return (
+      <AppFrame>
+        <OnboardingFlow
+          onComplete={(p) => {
+            saveProfile(p)
+            setProfile(p)
+            setScreen("home")
+          }}
+        />
+      </AppFrame>
+    )
+  }
+
+  const todayKey = toDateKey(TODAY)
+  const checkedInToday = profile.checkIns.some((c) => c.date === todayKey)
+  const stage = stageFromStreak(profile.streak)
 
   const handleCompleteCheckIn = (answers: CheckInAnswers) => {
-    // Always save the reflection. Only a "Yes" grows the streak + plant;
-    // a "No" is logged but leaves the streak untouched (grace handles the miss).
+    const wroteReflection = Boolean(answers.howItWent.trim() || answers.reason.trim())
+    const record: CheckInRecord = { date: todayKey, ...answers }
+
+    let { streak, longestStreak, reflections } = profile
     if (answers.didHabit) {
-      const nextStreak = streak + 1
-      setStreak(nextStreak)
-      setLongestStreak((longest) => Math.max(longest, nextStreak))
-      setVitality((v) => Math.min(100, v + 8))
+      streak = profile.streak + 1
+      longestStreak = Math.max(profile.longestStreak, streak)
     }
-    // Any real reflection — Yes or No — counts toward the plant's vitality.
-    if (answers.howItWent.trim() || answers.reason.trim()) {
-      setReflections((r) => r + 1)
+    if (wroteReflection) reflections = profile.reflections + 1
+
+    const next: UserProfile = {
+      ...profile,
+      streak,
+      longestStreak,
+      reflections,
+      // one record per day — replace today's if it already exists
+      checkIns: [...profile.checkIns.filter((c) => c.date !== todayKey), record],
     }
-    setCheckedInToday(true)
-    const todayKey = toDateKey(TODAY)
-    setCheckInLog((log) => [
-      ...log.filter((e) => e.date !== todayKey),
-      { ...answers, date: todayKey },
-    ])
+    saveProfile(next)
+    setProfile(next)
   }
 
   return (
     <AppFrame>
       <AnimatePresence mode="wait">
         {screen === "home" && (
-          <motion.div
-            key="home"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
             <HomeScreen
-              userName="Avery"
-              goalName={goalName}
-              streak={streak}
-              longestStreak={longestStreak}
-              reflections={reflections}
-              vitality={vitality}
-              stage={stageFromStreak(streak)}
-              isWilting={isWilting}
-              inGracePeriod={inGracePeriod}
+              userName={profile.name}
+              goalName={profile.habit}
+              streak={profile.streak}
+              longestStreak={profile.longestStreak}
+              reflections={profile.reflections}
+              stage={stage}
+              isWilting={false}
+              inGracePeriod={false}
               checkedInToday={checkedInToday}
               onCheckIn={() => setScreen("checkin")}
               onViewLog={() => setScreen("log")}
@@ -81,33 +88,17 @@ function App() {
         )}
 
         {screen === "log" && (
-          <motion.div
-            key="log"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <GrowthLogScreen
-              goalName={goalName}
-              entries={checkInLog}
-              onBack={() => setScreen("home")}
-            />
+          <motion.div key="log" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <GrowthLogScreen goalName={profile.habit} entries={profile.checkIns} onBack={() => setScreen("home")} />
           </motion.div>
         )}
 
         {screen === "checkin" && (
-          <motion.div
-            key="checkin"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+          <motion.div key="checkin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
             <CheckInScreen
-              goalName={goalName}
-              currentStage={stageFromStreak(streak)}
-              grownStage={stageFromStreak(streak + 1)}
+              goalName={profile.habit}
+              currentStage={stage}
+              grownStage={stageFromStreak(profile.streak + 1)}
               onComplete={handleCompleteCheckIn}
               onExit={() => setScreen("home")}
             />

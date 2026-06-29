@@ -15,11 +15,11 @@ export interface CheckInRecord {
 }
 
 /**
- * The app's notion of "today". Pinned so the seeded streak, the calendar's
- * today-ring, and freshly logged check-ins all line up in the demo. Swap for
- * `new Date()` once real persistence lands.
+ * The app's notion of "today". Now that real persistence drives the app, this
+ * is the actual current date — used for the calendar's today-ring and to key
+ * freshly logged check-ins. (`MOCK_CHECKINS` below is retained only for demos.)
  */
-export const TODAY = new Date(2026, 5, 25) // 2026-06-25 (Thursday)
+export const TODAY = new Date()
 
 /** Local-time `YYYY-MM-DD` key for a Date. */
 export function toDateKey(d: Date): string {
