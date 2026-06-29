@@ -8,6 +8,12 @@ interface GrowthVisualProps {
   stage: GrowthStage
   /** total reflections — drives leaf richness + visible roots (the plant's vitality) */
   reflections?: number
+  /**
+   * When true, roots slowly "grow" downward from the pot (~2s ease-out) as the
+   * component appears — used on the reflection confirmation to show the plant
+   * getting healthier. Roots are forced visible even at 0 reflections.
+   */
+  animateRoots?: boolean
   wilting?: boolean
   className?: string
 }
@@ -52,6 +58,9 @@ const ROOT_STYLE: Record<Exclude<RootLevel, "none">, { opacity: number; width: n
   deep: { opacity: 0.68, width: 2.4 },
 }
 
+/** Underground root color — shared so animated + static roots match exactly. */
+const ROOT_COLOR = "oklch(0.42 0.045 65)"
+
 /**
  * The plant's SIZE follows `stage` (streak); its VITALITY follows `reflections`:
  * more reflections deepen leaf green and grow visible roots. `wilting` overlays
@@ -60,6 +69,7 @@ const ROOT_STYLE: Record<Exclude<RootLevel, "none">, { opacity: number; width: n
 export function GrowthVisual({
   stage,
   reflections = 0,
+  animateRoots = false,
   wilting = false,
   className,
 }: GrowthVisualProps) {
@@ -121,27 +131,54 @@ export function GrowthVisual({
 
         <ellipse cx="120" cy="208" rx="58" ry="10" fill="url(#potShadow)" />
 
-        {/* roots — beneath the pot, fading in as reflections accumulate */}
-        <AnimatePresence mode="wait">
-          {rootLevel !== "none" && (
-            <motion.g
-              key={rootLevel}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              stroke="oklch(0.42 0.045 65)"
-              strokeWidth={ROOT_STYLE[rootLevel].width}
-              strokeLinecap="round"
-              fill="none"
-              style={{ opacity: ROOT_STYLE[rootLevel].opacity }}
-            >
-              {ROOT_PATHS[rootLevel].map((d, i) => (
-                <path key={i} d={d} />
-              ))}
-            </motion.g>
-          )}
-        </AnimatePresence>
+        {/* roots — beneath the pot */}
+        {animateRoots ? (
+          // Confirmation: roots slowly draw downward from the pot (~2s).
+          (() => {
+            const drawLevel = rootLevel === "none" ? "clear" : rootLevel
+            return (
+              <g
+                stroke={ROOT_COLOR}
+                strokeWidth={ROOT_STYLE[drawLevel].width}
+                strokeLinecap="round"
+                fill="none"
+                style={{ opacity: ROOT_STYLE[drawLevel].opacity }}
+              >
+                {ROOT_PATHS[drawLevel].map((d, i) => (
+                  <motion.path
+                    key={i}
+                    d={d}
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 2, ease: "easeOut", delay: 0.25 }}
+                  />
+                ))}
+              </g>
+            )
+          })()
+        ) : (
+          // Home: roots fade in as reflections accumulate.
+          <AnimatePresence mode="wait">
+            {rootLevel !== "none" && (
+              <motion.g
+                key={rootLevel}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                stroke={ROOT_COLOR}
+                strokeWidth={ROOT_STYLE[rootLevel].width}
+                strokeLinecap="round"
+                fill="none"
+                style={{ opacity: ROOT_STYLE[rootLevel].opacity }}
+              >
+                {ROOT_PATHS[rootLevel].map((d, i) => (
+                  <path key={i} d={d} />
+                ))}
+              </motion.g>
+            )}
+          </AnimatePresence>
+        )}
 
         {/* plant body — crossfades between stages */}
         <AnimatePresence mode="wait">

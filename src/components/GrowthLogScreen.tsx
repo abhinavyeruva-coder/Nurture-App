@@ -69,7 +69,7 @@ export function GrowthLogScreen({ goalName, entries, onBack }: GrowthLogScreenPr
   const selected = selectedKey ? byDate.get(selectedKey) : undefined
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col px-5 pb-10 pt-7">
+    <div className="relative flex min-h-screen w-full flex-col px-5 pb-10 pt-[max(env(safe-area-inset-top),28px)]">
       {/* header */}
       <header className="flex items-center gap-3">
         <button

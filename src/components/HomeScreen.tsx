@@ -52,7 +52,7 @@ export function HomeScreen({
   onViewLog,
 }: HomeScreenProps) {
   return (
-    <div className="flex min-h-screen w-full flex-col px-5 pb-10 pt-7">
+    <div className="flex min-h-screen w-full flex-col px-5 pb-10 pt-[max(env(safe-area-inset-top),28px)]">
         {/* header */}
         <header className="flex items-center justify-between">
           <div>

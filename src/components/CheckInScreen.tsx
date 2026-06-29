@@ -83,7 +83,7 @@ export function CheckInScreen({ goalName, currentStage, grownStage, onComplete, 
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col px-5 pb-10 pt-7">
+    <div className="flex min-h-screen w-full flex-col px-5 pb-10 pt-[max(env(safe-area-inset-top),28px)]">
       {step < 3 && (
         <>
           <div className="flex items-center gap-3">
@@ -230,6 +230,7 @@ export function CheckInScreen({ goalName, currentStage, grownStage, onComplete, 
             <div className="h-44 w-44">
               <GrowthVisual
                 stage={didHabit ? grownStage : currentStage}
+                animateRoots={!didHabit}
                 className="h-full w-full"
               />
             </div>
