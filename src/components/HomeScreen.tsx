@@ -146,6 +146,7 @@ export function HomeScreen({
             <div className="h-56 w-56">
               <PlantVisual
                 type={plantType}
+                stage={stage}
                 animateIn={revealing}
                 reducedMotion={reduce}
                 className="h-full w-full"
