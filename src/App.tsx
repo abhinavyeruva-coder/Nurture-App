@@ -23,29 +23,20 @@ function App() {
   // Single source of truth — loaded from localStorage on first render.
   const [profile, setProfile] = useState<UserProfile | null>(() => loadProfile())
   const [screen, setScreen] = useState<Screen>("home")
+  // One-time onboarding → home reveal (plant grows, UI staggers in).
+  const [intro, setIntro] = useState(false)
 
-  // No saved profile → first run: send the user through onboarding.
-  if (!profile) {
-    return (
-      <AppFrame>
-        <OnboardingFlow
-          onComplete={(p) => {
-            saveProfile(p)
-            setProfile(p)
-            setScreen("home")
-          }}
-        />
-      </AppFrame>
-    )
+  const completeOnboarding = (p: UserProfile) => {
+    saveProfile(p)
+    setProfile(p)
+    setIntro(true)
+    setScreen("home")
   }
 
-  const todayKey = toDateKey(TODAY)
-  const checkedInToday = profile.checkIns.some((c) => c.date === todayKey)
-  const stage = stageFromStreak(profile.streak)
-
   const handleCompleteCheckIn = (answers: CheckInAnswers) => {
+    if (!profile) return
     const wroteReflection = Boolean(answers.howItWent.trim() || answers.reason.trim())
-    const record: CheckInRecord = { date: todayKey, ...answers }
+    const record: CheckInRecord = { date: toDateKey(TODAY), ...answers }
 
     let { streak, longestStreak, reflections } = profile
     if (answers.didHabit) {
@@ -60,20 +51,31 @@ function App() {
       longestStreak,
       reflections,
       // one record per day — replace today's if it already exists
-      checkIns: [...profile.checkIns.filter((c) => c.date !== todayKey), record],
+      checkIns: [...profile.checkIns.filter((c) => c.date !== record.date), record],
     }
     saveProfile(next)
     setProfile(next)
   }
 
+  const todayKey = toDateKey(TODAY)
+  const checkedInToday = profile ? profile.checkIns.some((c) => c.date === todayKey) : false
+  const stage = profile ? stageFromStreak(profile.streak) : "seed"
+
   return (
     <AppFrame>
       <AnimatePresence mode="wait">
-        {screen === "home" && (
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+        {!profile && (
+          <motion.div key="onboarding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+            <OnboardingFlow onComplete={completeOnboarding} />
+          </motion.div>
+        )}
+
+        {profile && screen === "home" && (
+          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
             <HomeScreen
               userName={profile.name}
               goalName={profile.habit}
+              plantType={profile.plant}
               streak={profile.streak}
               longestStreak={profile.longestStreak}
               reflections={profile.reflections}
@@ -83,17 +85,19 @@ function App() {
               checkedInToday={checkedInToday}
               onCheckIn={() => setScreen("checkin")}
               onViewLog={() => setScreen("log")}
+              intro={intro}
+              onIntroComplete={() => setIntro(false)}
             />
           </motion.div>
         )}
 
-        {screen === "log" && (
+        {profile && screen === "log" && (
           <motion.div key="log" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
             <GrowthLogScreen goalName={profile.habit} entries={profile.checkIns} onBack={() => setScreen("home")} />
           </motion.div>
         )}
 
-        {screen === "checkin" && (
+        {profile && screen === "checkin" && (
           <motion.div key="checkin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
             <CheckInScreen
               goalName={profile.habit}

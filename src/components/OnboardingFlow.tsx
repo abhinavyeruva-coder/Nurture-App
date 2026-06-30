@@ -125,7 +125,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 autoFocus
                 value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 40))}
-                placeholder="Your first name"
+                placeholder="Whatever you go by..."
                 autoCapitalize="words"
                 onKeyDown={(e) => e.key === "Enter" && stepValid[1] && next()}
                 className={inputBase + " h-14 capitalize"}
@@ -149,7 +149,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 autoFocus
                 value={habit}
                 onChange={(e) => setHabit(e.target.value.slice(0, 120))}
-                placeholder="Go to the gym 4 times a week"
+                placeholder="Be specific. One thing only."
                 className={inputBase + " min-h-20 resize-none py-3"}
               />
             </div>
@@ -171,7 +171,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 autoFocus
                 value={why}
                 onChange={(e) => setWhy(e.target.value.slice(0, 240))}
-                placeholder="Because I want to feel stronger in my own body..."
+                placeholder="No one's reading this but you."
                 className={inputBase + " min-h-28 resize-none py-3"}
               />
             </div>

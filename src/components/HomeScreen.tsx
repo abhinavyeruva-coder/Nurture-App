@@ -1,13 +1,18 @@
+import { useEffect } from "react"
+import { motion, useReducedMotion } from "motion/react"
 import { Flame, Leaf, Droplet, Sprout, AlertTriangle, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { GrowthVisual, type GrowthStage } from "@/components/GrowthVisual"
+import { PlantVisual } from "@/components/PlantVisual"
+import { type GrowthStage } from "@/components/GrowthVisual"
+import type { PlantType } from "@/lib/profile"
 
 export interface HomeScreenProps {
   userName?: string
   goalName: string
+  plantType: PlantType
   streak: number
   longestStreak: number
   reflections: number
@@ -17,6 +22,10 @@ export interface HomeScreenProps {
   checkedInToday: boolean
   onCheckIn: () => void
   onViewLog: () => void
+  /** play the one-time onboarding → home reveal (plant grows, UI staggers in) */
+  intro?: boolean
+  /** called once the reveal finishes, so it doesn't replay */
+  onIntroComplete?: () => void
 }
 
 /** Each stage's display name, the streak day it begins, and where the next starts. */
@@ -47,6 +56,7 @@ function stageProgress(stage: GrowthStage, streak: number): number {
 export function HomeScreen({
   userName = "Avery",
   goalName,
+  plantType,
   streak,
   longestStreak,
   reflections,
@@ -56,16 +66,39 @@ export function HomeScreen({
   checkedInToday,
   onCheckIn,
   onViewLog,
+  intro = false,
+  onIntroComplete,
 }: HomeScreenProps) {
   // Brand-new users (streak 0) get a welcoming "Day 1" label + empty bar;
   // once they've checked in once, the normal stage logic takes over.
   const isNewUser = streak === 0
   const cardLabel = isNewUser ? "Seed — Day 1 of your journey" : stageLabel(stage, streak)
   const progress = isNewUser ? 0 : stageProgress(stage, streak)
+
+  const reduce = useReducedMotion() ?? false
+  const revealing = intro && !reduce
+
+  // End the one-time reveal after it plays (or immediately when reduced).
+  useEffect(() => {
+    if (!intro) return
+    const t = setTimeout(() => onIntroComplete?.(), reduce ? 250 : 2600)
+    return () => clearTimeout(t)
+  }, [intro, reduce, onIntroComplete])
+
+  // Staggered fade/rise for each section during the reveal; a no-op otherwise.
+  const reveal = (delay: number) =>
+    revealing
+      ? {
+          initial: { opacity: 0, y: 14 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.6, delay, ease: "easeOut" as const },
+        }
+      : {}
+
   return (
     <div className="flex min-h-screen w-full flex-col px-5 pb-10 pt-[max(env(safe-area-inset-top),28px)]">
         {/* header */}
-        <header className="flex items-center justify-between">
+        <motion.header className="flex items-center justify-between" {...reveal(0.5)}>
           <div>
             <p className="text-sm text-muted-foreground">Welcome back,</p>
             <h1 className="font-heading text-2xl font-medium text-foreground">{userName}</h1>
@@ -73,7 +106,7 @@ export function HomeScreen({
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-primary">
             <Leaf className="h-5 w-5" />
           </div>
-        </header>
+        </motion.header>
 
         {/* grace period / wilting notice */}
         {(inGracePeriod || isWilting) && (
@@ -94,7 +127,8 @@ export function HomeScreen({
           </div>
         )}
 
-        {/* growth card */}
+        {/* growth card — the anchor of the reveal, appears first */}
+        <motion.div {...reveal(0.15)}>
         <Card className="mt-6 overflow-hidden border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
           <CardContent className="flex flex-col items-center px-6 pb-2 pt-4">
             <div className="flex w-full items-center justify-between gap-2">
@@ -110,10 +144,10 @@ export function HomeScreen({
             </div>
 
             <div className="h-56 w-56">
-              <GrowthVisual
-                stage={stage}
-                reflections={reflections}
-                wilting={isWilting}
+              <PlantVisual
+                type={plantType}
+                animateIn={revealing}
+                reducedMotion={reduce}
                 className="h-full w-full"
               />
             </div>
@@ -127,9 +161,10 @@ export function HomeScreen({
             </div>
           </CardContent>
         </Card>
+        </motion.div>
 
         {/* streak + reflection stats */}
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <motion.div className="mt-4 grid grid-cols-3 gap-3" {...reveal(0.8)}>
           <Card className="border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
             <CardContent className="flex flex-col gap-1 px-3 py-1">
               <div className="flex items-center gap-1 text-muted-foreground">
@@ -163,28 +198,31 @@ export function HomeScreen({
               </p>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
 
         {/* spacer pushes CTA + log link down on tall screens */}
         <div className="flex-1" />
 
-        <button
+        <motion.button
           type="button"
           onClick={onViewLog}
           className="mt-6 flex items-center justify-between rounded-2xl bg-secondary/60 px-4 py-3 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary"
+          {...reveal(1.1)}
         >
           View growth log & streak history
           <ChevronRight className="h-4 w-4" />
-        </button>
+        </motion.button>
 
-        <Button
-          size="lg"
-          onClick={onCheckIn}
-          disabled={checkedInToday}
-          className="mt-3 h-14 w-full rounded-2xl bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-100 disabled:bg-secondary disabled:text-secondary-foreground"
-        >
-          {checkedInToday ? "Checked in ✓" : "Check in for today"}
-        </Button>
+        <motion.div {...reveal(1.3)}>
+          <Button
+            size="lg"
+            onClick={onCheckIn}
+            disabled={checkedInToday}
+            className="mt-3 h-14 w-full rounded-2xl bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-100 disabled:bg-secondary disabled:text-secondary-foreground"
+          >
+            {checkedInToday ? "Checked in ✓" : "Check in for today"}
+          </Button>
+        </motion.div>
     </div>
   )
 }

@@ -191,10 +191,13 @@ export function GrowthVisual({
             style={{ transformOrigin: "120px 196px" }}
           >
             {stage === "seed" && (
-              <path
-                d="M120 184 C113 184, 109 178, 110 172 C118 172, 122 178, 120 184 Z M120 184 C127 184, 131 178, 130 172 C122 172, 118 178, 120 184 Z"
-                style={{ fill: leafColorDeep, ...colorTransition }}
-              />
+              <g>
+                {/* mounded earth rising from the pot — a seed has been planted */}
+                <path d="M96 173 Q120 151 144 173 Z" fill="oklch(0.44 0.055 61)" />
+                <path d="M107 173 Q120 162 133 173 Z" fill="oklch(0.37 0.05 58)" />
+                {/* the seed nestled in the soil */}
+                <ellipse cx="120" cy="162" rx="4" ry="5" fill="oklch(0.53 0.07 73)" transform="rotate(-12 120 162)" />
+              </g>
             )}
 
             {stage === "sprout" && (
