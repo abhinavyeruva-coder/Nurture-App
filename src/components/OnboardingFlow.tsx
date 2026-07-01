@@ -279,8 +279,8 @@ function SeedIcon({ className }: { className?: string }) {
 }
 
 /**
- * Screen 7: a seed drops into soil, gets covered, and a sprout emerges (~2.4s),
- * then the personalized message + "Start growing" button fade in.
+ * Screen 7: a seed drops into the soil with a spring settle and gets buried
+ * (~1.8s), then the personalized message + "Start growing" button fade in.
  */
 function PlantingMoment({ name, habit, onStart }: { name: string; habit: string; onStart: () => void }) {
   const reduce = useReducedMotion()
@@ -291,53 +291,48 @@ function PlantingMoment({ name, habit, onStart }: { name: string; habit: string;
       setRevealed(true)
       return
     }
-    const t = setTimeout(() => setRevealed(true), 2400)
+    const t = setTimeout(() => setRevealed(true), 1800)
     return () => clearTimeout(t)
   }, [reduce])
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-7 text-center">
       <svg viewBox="0 0 160 160" className="h-48 w-48" role="img" aria-label="Planting a seed">
-        {/* soil */}
-        <ellipse cx="80" cy="132" rx="52" ry="13" fill="oklch(0.42 0.05 60)" />
-        <ellipse cx="80" cy="128" rx="52" ry="9" fill="oklch(0.47 0.055 62)" />
+        {/* soil surface */}
+        <ellipse cx="80" cy="130" rx="52" ry="13" fill="oklch(0.40 0.05 58)" />
+        <ellipse cx="80" cy="126" rx="52" ry="9" fill="oklch(0.46 0.055 62)" />
 
-        {/* seed dropping in */}
-        <motion.ellipse
-          cx="80"
-          cy="120"
-          rx="5"
-          ry="7"
-          fill="oklch(0.45 0.07 70)"
-          initial={reduce ? { opacity: 0 } : { y: -92, opacity: 1 }}
-          animate={reduce ? { opacity: 0 } : { y: [-92, 0, 0], opacity: [1, 1, 0] }}
-          transition={reduce ? { duration: 0 } : { duration: 1.2, times: [0, 0.55, 1], ease: "easeIn" }}
-        />
+        {/* seed drops in and settles with a spring */}
+        <motion.g
+          initial={reduce ? { y: 0 } : { y: -96 }}
+          animate={{ y: 0 }}
+          transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 80, damping: 14 }}
+        >
+          <ellipse cx="80" cy="118" rx="5.5" ry="8" fill="oklch(0.53 0.07 72)" transform="rotate(-10 80 118)" />
+          <ellipse cx="76.5" cy="113" rx="1.6" ry="2.6" fill="oklch(0.72 0.05 82)" opacity="0.5" transform="rotate(-10 80 118)" />
+        </motion.g>
 
-        {/* soil mound covering the seed */}
-        <motion.ellipse
-          cx="80"
-          cy="124"
-          rx="15"
-          ry="6"
+        {/* soil buries the lower ~75% of the seed (soft easeOut) */}
+        <motion.path
+          d="M56 127 Q80 114 104 127 Q80 131 56 127 Z"
           fill="oklch(0.38 0.05 58)"
-          style={{ transformOrigin: "80px 126px" }}
+          style={{ transformOrigin: "80px 127px" }}
           initial={reduce ? { scaleY: 1, opacity: 1 } : { scaleY: 0, opacity: 0 }}
           animate={{ scaleY: 1, opacity: 1 }}
-          transition={reduce ? { duration: 0 } : { delay: 0.7, duration: 0.4, ease: "easeOut" }}
+          transition={reduce ? { duration: 0 } : { delay: 0.75, duration: 0.5, ease: "easeOut" }}
         />
 
-        {/* sprout emerging */}
-        <motion.g
-          style={{ transformOrigin: "80px 122px" }}
-          initial={reduce ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={reduce ? { duration: 0 } : { delay: 1.3, duration: 1.1, ease: "easeOut" }}
-        >
-          <path d="M80 122 C80 108, 80 100, 80 92" stroke="var(--sprout)" strokeWidth="4" strokeLinecap="round" fill="none" />
-          <path d="M80 102 C68 102, 61 94, 63 84 C75 86, 80 94, 80 102 Z" fill="var(--sprout)" />
-          <path d="M80 102 C92 102, 99 94, 97 84 C85 86, 80 94, 80 102 Z" fill="oklch(0.45 0.12 150)" />
-        </motion.g>
+        {/* soft contact shadow where the seed meets the soil */}
+        <motion.ellipse
+          cx="80"
+          cy="113.5"
+          rx="6"
+          ry="1.6"
+          fill="#241c14"
+          initial={reduce ? { opacity: 0.22 } : { opacity: 0 }}
+          animate={{ opacity: 0.22 }}
+          transition={reduce ? { duration: 0 } : { delay: 1, duration: 0.4 }}
+        />
       </svg>
 
       <AnimatePresence>

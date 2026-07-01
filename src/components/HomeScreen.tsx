@@ -85,13 +85,19 @@ export function HomeScreen({
     return () => clearTimeout(t)
   }, [intro, reduce, onIntroComplete])
 
-  // Staggered fade/rise for each section during the reveal; a no-op otherwise.
-  const reveal = (delay: number) =>
+  // Staggered spring-in for each section during the reveal; a no-op otherwise.
+  // `overshoot` gives the plant card a gentle settle (slight overshoot).
+  const reveal = (delay: number, overshoot = false) =>
     revealing
       ? {
-          initial: { opacity: 0, y: 14 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.6, delay, ease: "easeOut" as const },
+          initial: overshoot ? { opacity: 0, scale: 0.9, y: 8 } : { opacity: 0, y: 14 },
+          animate: overshoot ? { opacity: 1, scale: 1, y: 0 } : { opacity: 1, y: 0 },
+          transition: {
+            type: "spring" as const,
+            stiffness: overshoot ? 70 : 90,
+            damping: overshoot ? 12 : 15,
+            delay,
+          },
         }
       : {}
 
@@ -128,7 +134,7 @@ export function HomeScreen({
         )}
 
         {/* growth card — the anchor of the reveal, appears first */}
-        <motion.div {...reveal(0.15)}>
+        <motion.div {...reveal(0.15, true)}>
         <Card className="mt-6 overflow-hidden border-none bg-card shadow-sm ring-1 ring-foreground/[0.06]">
           <CardContent className="flex flex-col items-center px-6 pb-2 pt-4">
             <div className="flex w-full items-center justify-between gap-2">
